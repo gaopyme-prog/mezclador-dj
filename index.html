@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Mezclador DJ</title>
+<title>El Profe Omar</title>
 <style>
 @font-face{font-family:'Orbitron';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/orbitron-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:'Orbitron';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/orbitron-latin-700-normal.woff2) format('woff2')}
@@ -40,12 +40,6 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 h1{font-family:var(--disp);font-weight:800;font-size:1.55rem;margin:0;letter-spacing:.14em;text-transform:uppercase;text-wrap:balance}
 h1 span{background:linear-gradient(90deg,var(--deckA),var(--deckB));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hint{color:var(--muted);margin:0;max-width:62ch;font-size:.98rem}
-.titlebox{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
-.aviso{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);
-  padding:6px 12px;border-radius:6px;background:#0a0d12;border:1px solid #000;box-shadow:inset 0 2px 6px #000,0 0 18px -6px rgba(255,194,61,.5),0 1px 0 var(--edge);text-shadow:0 0 10px rgba(255,194,61,.45)}
-.aviso i{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
-.firma{text-align:center;font-family:var(--disp);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);padding:8px 0 2px}
-.firma b{color:var(--amber);font-weight:700;text-shadow:0 0 10px rgba(255,194,61,.4)}
 
 /* ----- Chasis metálico (tornamesas, mezclador, caja de discos) ----- */
 .deck,.mixer,.list{position:relative;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;
@@ -136,7 +130,7 @@ button:focus-visible,.filebtn:focus-within,input:focus-visible,select:focus-visi
 .transport{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:stretch}
 .play{font-size:1.05rem;min-height:48px;color:var(--c);letter-spacing:.1em;white-space:nowrap;padding-inline:10px}
 .play.on{background:linear-gradient(var(--c),var(--c));color:#05070a;box-shadow:0 0 22px var(--glow),inset 0 1px 0 rgba(255,255,255,.5)}
-.sync{font-size:.68rem;letter-spacing:.04em;max-width:96px;min-width:0;padding-inline:8px;line-height:1.1;overflow-wrap:anywhere}
+.sync{font-size:.68rem;letter-spacing:.04em;max-width:96px;min-width:0;padding-inline:8px;line-height:1.1;white-space:nowrap}
 label.ctl{display:grid;grid-template-columns:76px 1fr 54px;gap:8px;align-items:center;font-family:var(--disp);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 label.ctl output{font-family:var(--mono);font-size:.95rem;letter-spacing:0;color:var(--c,var(--fg));text-align:right;font-variant-numeric:tabular-nums}
 
@@ -206,10 +200,7 @@ ul.tracks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap
 
 <div class="wrap">
   <header>
-    <div class="titlebox">
-      <div class="aviso"><i></i>AVISO: El profe Omar</div>
-      <h1>Mezclador <span>DJ</span></h1>
-    </div>
+    <h1><span>EL PROFE OMAR</span></h1>
     <p class="hint">Añade tus canciones, mándalas a una tornamesa, iguala el tempo y pasa de una a otra con el crossfader.</p>
   </header>
 
@@ -252,7 +243,6 @@ ul.tracks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap
     <div class="empty-list" id="emptylist">Aún no hay canciones. Pulsa «Añadir canciones» (puedes elegir varias a la vez) o arrástralas aquí.</div>
   </section>
 
-  <footer class="firma">AVISO: <b>El profe Omar</b> · Mezclador DJ</footer>
 </div>
 
 <script>
@@ -373,7 +363,7 @@ function Deck(root, name){
       '<div class="pitch"><span class="pl">PITCH</span><div class="pbox"><input type="range" class="fader spd" min="75" max="125" value="100" aria-label="Velocidad del deck '+name+'"></div><output>1.00×</output></div>'+
     '</div>'+
     '<div class="transport"><button class="rew" disabled>⏮ Inicio</button><button class="play" disabled>▶ Play</button>'+
-      '<button class="sync ghost" disabled>Sincronizar con '+(name==='A'?'B':'A')+'</button></div>'+
+      '<button class="sync ghost" disabled title="Iguala el tempo de este deck al del otro">Sync con '+(name==='A'?'B':'A')+'</button></div>'+
     '<label class="ctl">Canal<input type="range" class="fader vol" min="0" max="100" value="90"><output>90%</output></label>'+
     '<div class="knobs">'+
       knobHtml('Graves','eqlow',-12,12,0,' dB')+knobHtml('Medios','eqmid',-12,12,0,' dB')+knobHtml('Agudos','eqhigh',-12,12,0,' dB')+
@@ -974,6 +964,5 @@ if('serviceWorker' in navigator){
   window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
 }
 </script>
-
 </body>
 </html>
