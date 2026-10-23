@@ -1,0 +1,25 @@
+MEZCLADOR DJ - El profe Omar
+============================
+
+Contenido de esta carpeta (se sube TODO junto a GitHub, sin cambiar nombres):
+  index.html            la aplicación
+  manifest.webmanifest  datos para instalarla como programa
+  sw.js                 hace que abra sin internet
+  icons/                íconos
+  fonts/                letras (para que se vea igual sin internet)
+
+PUBLICAR EN GITHUB PAGES
+1. Entra a github.com y crea un repositorio nuevo (botón "New"). Nombre sugerido: mezclador-dj. Público.
+2. Dentro del repositorio: "Add file" > "Upload files". Arrastra TODO el contenido de esta carpeta
+   (index.html, manifest.webmanifest, sw.js y las carpetas icons y fonts). Pulsa "Commit changes".
+3. Ve a Settings > Pages. En "Branch" elige main y la carpeta / (root). Pulsa Save.
+4. Espera 1 o 2 minutos. La dirección será: https://TU-USUARIO.github.io/mezclador-dj/
+
+INSTALAR COMO PROGRAMA
+- Abre esa dirección en Chrome o Edge en tu computador.
+- Pulsa el ícono de instalar que aparece a la derecha de la barra de direcciones
+  (o menú ⋮ > "Guardar y compartir" > "Instalar Mezclador DJ").
+- Queda un ícono en el escritorio / menú Inicio y se abre en su propia ventana, también sin internet.
+
+ACTUALIZAR EN EL FUTURO
+Si cambias algún archivo, edita sw.js y sube el número de VERSION (v1 -> v2) para que se actualice en todos los equipos.
