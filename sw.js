@@ -1,6 +1,6 @@
 /* Service worker: guarda la aplicación para que abra sin internet.
    Si publicas cambios, sube de versión este número para que todos reciban la actualización. */
-var VERSION = 'mezclador-dj-v3';
+var VERSION = 'mezclador-dj-v4';
 var ARCHIVOS = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',

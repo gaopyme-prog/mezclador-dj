@@ -194,6 +194,26 @@ ul.tracks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap
 .tr-meta{font-family:var(--mono);font-size:.88rem;color:var(--amber);white-space:nowrap;font-variant-numeric:tabular-nums}
 .tr-btns{display:flex;gap:6px}
 .empty-list{color:var(--muted);padding:10px 0;font-size:.95rem}
+.badge.vid{background:#8793a6;box-shadow:none}
+
+/* ----- Pantalla de video ----- */
+[hidden]{display:none!important}
+.screen{position:relative;border-radius:16px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;width:100%;max-width:900px;margin:0 auto;
+  background:linear-gradient(150deg,var(--metal-1) 0%,var(--metal-2) 42%,var(--metal-3) 100%);border:1px solid #000;
+  box-shadow:0 34px 50px -24px #000,0 0 0 1px var(--edge),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.65)}
+.scr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.screen h2{font-family:var(--disp);font-size:.95rem;margin:0;letter-spacing:.2em;text-transform:uppercase}
+.scr-box{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 2px #000,0 0 0 1px var(--edge),0 0 44px -14px rgba(37,225,255,.3)}
+.scr-box video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;z-index:1}
+.scr-cap{position:absolute;left:14px;right:14px;bottom:10px;z-index:5;font-family:var(--disp);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#fff;text-shadow:0 1px 6px #000,0 0 14px #000;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scr-ctl{position:absolute;left:0;right:0;bottom:0;z-index:6;display:none;align-items:center;gap:12px;padding:16px 20px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85));transition:opacity .35s}
+.scr-box.fs{border-radius:0;aspect-ratio:auto;width:100%;height:100%;box-shadow:none}
+.scr-box.fs .scr-ctl{display:flex}
+.scr-box.fs.idle .scr-ctl{opacity:0;pointer-events:none}
+.scr-box.fs.idle{cursor:none}
+.scr-box.fs .scr-cap{bottom:92px;font-size:1.05rem}
+.scr-ctl .fader{flex:1;min-width:90px;--c:#dfe6f2}
+.scr-lbl{font-family:var(--disp);font-weight:800}
 </style>
 </head>
 <body>
@@ -201,8 +221,22 @@ ul.tracks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap
 <div class="wrap">
   <header>
     <h1><span>EL PROFE OMAR</span></h1>
-    <p class="hint">Añade tus canciones, mándalas a una tornamesa, iguala el tempo y pasa de una a otra con el crossfader.</p>
+    <p class="hint">Añade tus canciones o videos, mándalos a una tornamesa, iguala el tempo y pasa de uno a otro con el crossfader.</p>
   </header>
+
+  <section class="screen" id="screen" hidden aria-label="Pantalla de video">
+    <div class="scr-head"><h2>Pantalla</h2>
+      <div class="row"><span class="fxhint">Doble clic en la pantalla o tecla F para ampliar · Esc para salir</span><button id="fsbtn">⛶ Pantalla completa</button></div></div>
+    <div class="scr-box" id="scrbox">
+      <div class="scr-cap" id="scrcap"></div>
+      <div class="scr-ctl" id="scrctl">
+        <button id="fsplay">❚❚ Pausa</button>
+        <button id="fsmix">Mezclar →</button>
+        <span class="scr-lbl" style="color:var(--deckA)">A</span><input type="range" class="fader" id="fsx" min="0" max="1000" value="0" aria-label="Fundido entre A y B"><span class="scr-lbl" style="color:var(--deckB)">B</span>
+        <button id="fsexit">✕ Salir</button>
+      </div>
+    </div>
+  </section>
 
   <div class="console">
     <section class="deck a" id="deckA" aria-label="Tornamesa A"></section>
@@ -235,7 +269,7 @@ ul.tracks li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap
     <div class="list-head">
       <h2>Caja de discos</h2>
       <div class="row">
-        <label class="filebtn">Añadir canciones<input type="file" id="addfiles" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" multiple></label>
+        <label class="filebtn">Añadir canciones o videos<input type="file" id="addfiles" accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.mp4,.webm,.mov,.m4v,.mkv" multiple></label>
         <button class="ghost" id="sortbpm" disabled>Ordenar por BPM</button>
         <button class="ghost" id="clearlist" disabled>Vaciar lista</button>
       </div>
@@ -257,7 +291,24 @@ var statusEl = document.getElementById('status');
 function say(msg, isErr){ statusEl.textContent = msg; statusEl.className = 'status' + (isErr ? ' err' : ''); }
 function fmt(t){ if(!isFinite(t)||t<0) t=0; var m=Math.floor(t/60), s=Math.floor(t%60); return m+':'+(s<10?'0':'')+s; }
 function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
-function isAudioFile(f){ return (f.type && f.type.indexOf('audio')===0) || /\.(mp3|wav|ogg|m4a|flac|aac|opus|weba)$/i.test(f.name); }
+function isVideoFile(f){ return (f.type && f.type.indexOf('video')===0) || /\.(mp4|m4v|webm|mov|mkv|ogv|avi)$/i.test(f.name); }
+function isAudioFile(f){ return isVideoFile(f) || (f.type && f.type.indexOf('audio')===0) || /\.(mp3|wav|ogg|m4a|flac|aac|opus|weba)$/i.test(f.name); }   // «audio» incluye video: de los dos se usa el sonido
+var MAX_DECODE = 120*1024*1024;   // videos más pesados no se analizan (onda y BPM) para no gastar la memoria
+function probeVideo(file){
+  return new Promise(function(resolve, reject){
+    var v = document.createElement('video'), url = URL.createObjectURL(file), done = false, tm = null;
+    function end(ok, val){
+      if(done) return; done = true; clearTimeout(tm);
+      v.removeAttribute('src'); try{ v.load(); }catch(e){} URL.revokeObjectURL(url);
+      if(ok) resolve(val); else reject(new Error('video'));
+    }
+    tm = setTimeout(function(){ end(false); }, 20000);
+    v.preload = 'metadata'; v.muted = true;
+    v.onloadedmetadata = function(){ end(isFinite(v.duration) && v.duration > 0, v.duration); };
+    v.onerror = function(){ end(false); };
+    v.src = url;
+  });
+}
 function cleanName(f){ return f.name.replace(/\.[^.]+$/, ''); }
 
 function ensureCtx(){
@@ -353,10 +404,21 @@ function Deck(root, name){
   d.angle = 0; d.vel = 0; d.dragging = false; d.armAng = null;
   d.fresh = false;   // true = canción recién cargada y todavía sin tocar (lista para entrar)
   d.ended = false;   // true = la canción llegó sola hasta el final
+  d.isVideo = false; d.videoURL = null; d.title = '';
+  d.video = document.createElement('video');   // cada deck tiene su propio reproductor de video (el sonido pasa por la misma cadena de efectos)
+  d.video.playsInline = true; d.video.preload = 'auto'; d.video.disablePictureInPicture = true;
+  try{ d.video.preservesPitch = false; d.video.mozPreservesPitch = false; d.video.webkitPreservesPitch = false; }catch(e){}
+  document.getElementById('scrbox').appendChild(d.video);
+  d.video.addEventListener('ended', function(){
+    if(d.isVideo && d.playing){ d.playing = false; d.ended = true; d.offset = d.buffer.duration; d.refreshBtn(); }
+  });
+  d.video.addEventListener('error', function(){
+    if(d.isVideo && d.video.getAttribute('src')) say('El video del deck '+d.name+' no se pudo reproducir. Usa MP4 (H.264) o WebM.', true);
+  });
 
   root.innerHTML =
     '<div class="deck-head"><span class="tag">DECK '+name+'</span>'+
-    '<label class="filebtn">Cargar canción<input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac"></label></div>'+
+    '<label class="filebtn">Cargar archivo<input type="file" accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.mp4,.webm,.mov,.m4v,.mkv"></label></div>'+
     '<div class="lcd"><div class="title empty">Sin canción</div>'+
       '<div class="lcdrow"><div class="time"><span class="cur">0:00</span><small>/ <span class="tot">0:00</span></small></div><div class="bpm">— BPM</div></div></div>'+
     '<canvas></canvas>'+
@@ -375,7 +437,7 @@ function Deck(root, name){
     '</div>'+
     '<div class="row"><button class="fxreset ghost small">Reiniciar efectos</button><button class="demo ghost small" title="Genera una pista de prueba para ensayar la mezcla">Pista de ejemplo</button>'+
       '<span class="fxhint">Filtro: ◀ quita agudos · quita graves ▶</span></div>'+
-    '<div class="drop">o arrastra aquí un archivo de audio</div>';
+    '<div class="drop">o arrastra aquí un archivo de audio o video</div>';
 
   d.q = function(s){ return root.querySelector(s); };
   d.canvas = d.q('canvas');
@@ -490,6 +552,7 @@ Deck.prototype.initNodes = function(){
   low.connect(mid); mid.connect(high); high.connect(flt); flt.connect(this.gain); this.gain.connect(this.xf); this.xf.connect(master);
   this.gain.connect(this.delay); this.delay.connect(this.fb); this.fb.connect(this.delay);
   this.delay.connect(this.wet); this.wet.connect(this.xf);
+  if(!this.vsrc){ try{ this.vsrc = ctx.createMediaElementSource(this.video); this.vsrc.connect(low); }catch(e){} }
   this.nodes = true;
   this.applyGain(); this.applyFx(); applyCrossfader();
 };
@@ -521,14 +584,16 @@ Deck.prototype.applyFx = function(){
 };
 Deck.prototype.pos = function(){
   if(!this.buffer) return 0;
+  if(this.isVideo) return Math.min(this.video.currentTime || 0, this.buffer.duration);
   var p = this.playing ? this.offset + (ctx.currentTime - this.startedAt)*this.rate : this.offset;
   return Math.min(p, this.buffer.duration);
 };
 Deck.prototype.setRate = function(r, fromUser){
   r = Math.max(0.75, Math.min(1.25, r));
-  if(this.playing){ this.offset = this.pos(); this.startedAt = ctx.currentTime; }
+  if(this.playing && !this.isVideo){ this.offset = this.pos(); this.startedAt = ctx.currentTime; }
   this.rate = r;
   if(this.source) this.source.playbackRate.value = r;
+  if(this.isVideo) this.video.playbackRate = r;
   var s = this.q('.spd'); s.value = Math.round(r*100);
   this.q('.pitch output').textContent = r.toFixed(2)+'×';
   this.applyFx(); this.updateTempo();
@@ -560,6 +625,15 @@ Deck.prototype.play = function(){
   this.initNodes();
   ensureCtx();
   if(this.playing) return;
+  if(this.isVideo){
+    var self0 = this, v = this.video;
+    if(v.currentTime >= this.buffer.duration - 0.05) v.currentTime = 0;
+    v.playbackRate = this.rate;
+    this.fresh = false; this.ended = false; this.playing = true; this.refreshBtn();
+    var pr = v.play();
+    if(pr && pr.catch) pr.catch(function(){ self0.playing = false; self0.refreshBtn(); say('El navegador bloqueó el video. Pulsa Play otra vez.', true); });
+    return;
+  }
   if(this.offset >= this.buffer.duration - 0.05) this.offset = 0;
   this.fresh = false; this.ended = false;
   var src = ctx.createBufferSource();
@@ -577,6 +651,7 @@ Deck.prototype.play = function(){
   this.refreshBtn();
 };
 Deck.prototype.stopSource = function(){
+  if(this.isVideo){ try{ this.video.pause(); }catch(e){} }
   var s = this.source;
   if(s){ this.source = null; s.onended = null; try{ s.stop(); }catch(e){} try{ s.disconnect(); }catch(e){} }
 };
@@ -592,6 +667,7 @@ Deck.prototype.seek = function(t){
   if(!this.buffer) return;
   t = Math.max(0, Math.min(t, this.buffer.duration - 0.01));
   this.ended = false;
+  if(this.isVideo){ this.video.currentTime = t; return; }
   var was = this.playing;
   if(was){ this.stopSource(); this.playing = false; }
   this.offset = t;
@@ -607,6 +683,7 @@ Deck.prototype.setBuffer = function(buf, title, item, bpm){
   this.stopSource(); this.playing = false; this.offset = 0;
   this.fresh = true; this.ended = false;
   this.buffer = buf; this.item = item || null;
+  this.clearVideo(); this.title = title;
   this.computePeaks();
   var t = this.q('.title'); t.textContent = title; t.classList.remove('empty');
   this.q('.tot').textContent = fmt(buf.duration);
@@ -629,7 +706,12 @@ Deck.prototype.setBuffer = function(buf, title, item, bpm){
 };
 Deck.prototype.loadFile = function(file){
   var self = this;
-  if(!isAudioFile(file)){ say('«'+file.name+'» no parece un archivo de audio. Usa MP3, WAV, OGG, M4A o FLAC.', true); return Promise.resolve(); }
+  if(!isAudioFile(file)){ say('«'+file.name+'» no parece un archivo de audio ni de video. Usa MP3, WAV, OGG, M4A, FLAC, MP4 o WebM.', true); return Promise.resolve(); }
+  if(isVideoFile(file)){
+    say('Leyendo el video «'+file.name+'»…');
+    return probeVideo(file).then(function(dur){ self.setVideo(file, cleanName(file), null, undefined, dur); },
+      function(){ say('Este navegador no pudo abrir el video «'+file.name+'». Usa MP4 (H.264) o WebM.', true); });
+  }
   say('Leyendo «'+file.name+'»…');
   return decodeFile(file).then(function(buf){ self.setBuffer(buf, cleanName(file), null); },
     function(){ say('Este navegador no pudo abrir «'+file.name+'». Prueba con otro formato (MP3 o WAV).', true); });
@@ -637,11 +719,15 @@ Deck.prototype.loadFile = function(file){
 Deck.prototype.loadItem = function(item){
   var self = this;
   say('Cargando «'+item.name+'» en el deck '+this.name+'…');
+  if(isVideoFile(item.file)){
+    return probeVideo(item.file).then(function(dur){ self.setVideo(item.file, item.name, item, item.bpm, dur); },
+      function(){ say('Este navegador no pudo abrir el video «'+item.name+'».', true); });
+  }
   return decodeFile(item.file).then(function(buf){ self.setBuffer(buf, item.name, item, item.bpm); },
     function(){ say('Este navegador no pudo abrir «'+item.name+'».', true); });
 };
-Deck.prototype.computePeaks = function(){
-  var buf = this.buffer, n = 900, ch = buf.getChannelData(0);
+Deck.prototype.computePeaks = function(b){
+  var buf = b || this.buffer, n = 900, ch = buf.getChannelData(0);
   var block = Math.floor(ch.length / n) || 1, peaks = new Float32Array(n), max = 0;
   for(var i=0;i<n;i++){
     var s = i*block, e = Math.min(ch.length, s+block), m = 0;
@@ -660,7 +746,11 @@ Deck.prototype.draw = function(){
   g.clearRect(0,0,w,h);
   var col = css(this.name==='A' ? '--deckA' : '--deckB'), fg = css('--fg'), muted = '#566175';
   if(!this.peaks){
-    g.fillStyle = muted; g.globalAlpha = .5; g.fillRect(0, h/2-1, w, 2); g.globalAlpha = 1; return;
+    var q = this.buffer ? this.pos()/this.buffer.duration : 0;
+    g.fillStyle = muted; g.globalAlpha = .5; g.fillRect(0, h/2-2*dpr, w, 4*dpr);
+    g.globalAlpha = 1; g.fillStyle = col; g.fillRect(0, h/2-2*dpr, Math.round(q*w), 4*dpr);
+    if(this.buffer){ g.fillStyle = fg; g.fillRect(Math.round(q*w)-1, 0, 2*dpr, h); }
+    return;
   }
   var n = this.peaks.length, p = this.buffer ? this.pos()/this.buffer.duration : 0, mid = h/2;
   for(var x=0;x<w;x++){
@@ -686,6 +776,48 @@ Deck.prototype.animate = function(dt){
   var prog = this.buffer ? this.pos()/this.buffer.duration : 0;
   var ang = (this.playing || this.dragging) ? Math.round((2 + 18*prog)*5)/5 : -12;
   if(ang !== this.armAng){ this.armAng = ang; this.arm.style.transform = 'rotate('+ang+'deg)'; }
+};
+
+/* ----- Video ----- */
+Deck.prototype.rewind = function(){ this.offset = 0; if(this.isVideo) this.video.currentTime = 0; };
+Deck.prototype.clearVideo = function(){
+  if(this.videoURL){
+    try{ this.video.pause(); }catch(e){}
+    this.video.removeAttribute('src'); try{ this.video.load(); }catch(e){}
+    URL.revokeObjectURL(this.videoURL); this.videoURL = null;
+  }
+  this.isVideo = false;
+};
+Deck.prototype.setVideo = function(file, title, item, bpm, duration){
+  var self = this;
+  this.stopSource(); this.playing = false; this.offset = 0;
+  this.fresh = true; this.ended = false;
+  var oldURL = this.videoURL;
+  this.videoURL = URL.createObjectURL(file);
+  this.video.src = this.videoURL;
+  if(oldURL) URL.revokeObjectURL(oldURL);
+  var pseudo = {duration: duration, isVideo: true};   // hace de «buffer»: solo guarda la duración
+  this.isVideo = true; this.buffer = pseudo; this.item = item || null; this.peaks = null; this.title = title;
+  var t = this.q('.title'); t.textContent = title; t.classList.remove('empty');
+  this.q('.tot').textContent = fmt(duration);
+  this.playBtn.disabled = false; this.rewBtn.disabled = false;
+  this.setRate(1);
+  var needBpm = (bpm === undefined), canDecode = file.size <= MAX_DECODE;
+  this.bpm = needBpm ? null : bpm;
+  this.analyzing = needBpm && canDecode;
+  if(canDecode){
+    decodeFile(file).then(function(buf){
+      if(self.buffer !== pseudo) return;
+      self.computePeaks(buf);
+      if(needBpm){ var r = null; try{ r = analyzeBpm(buf); }catch(e){} self.bpm = r; if(self.item) self.item.bpm = r; }
+      self.analyzing = false; self.applyFx(); self.updateTempo(); renderList();
+    }, function(){
+      if(self.buffer !== pseudo) return;
+      self.analyzing = false; self.updateTempo();
+    });
+  }
+  this.applyFx(); this.updateTempo(); this.refreshBtn();
+  say('Deck '+this.name+' listo (video): '+title);
 };
 
 /* Pista de ejemplo sintetizada (para ensayar sin archivos) */
@@ -809,12 +941,22 @@ function runAnalysis(){
   if(!item){ return; }
   analysisBusy = true;
   item.state = 'analyzing'; renderList();
-  decodeFile(item.file).then(function(buf){
+  var job = isVideoFile(item.file) ? analyzeVideoItem(item) : decodeFile(item.file).then(function(buf){
     item.duration = buf.duration;
     try{ item.bpm = analyzeBpm(buf); }catch(e){ item.bpm = null; }
     item.state = 'ok';
-  }, function(){ item.state = 'err'; item.bpm = null; })
-  .then(function(){ analysisBusy = false; renderList(); runAnalysis(); });
+  }, function(){ item.state = 'err'; item.bpm = null; });
+  job.then(function(){ analysisBusy = false; renderList(); runAnalysis(); });
+}
+function analyzeVideoItem(item){
+  return probeVideo(item.file).then(function(dur){
+    item.duration = dur;
+    if(item.file.size > MAX_DECODE){ item.bpm = null; item.state = 'ok'; return; }
+    return decodeFile(item.file).then(function(buf){
+      try{ item.bpm = analyzeBpm(buf); }catch(e){ item.bpm = null; }
+      item.state = 'ok';
+    }, function(){ item.bpm = null; item.state = 'ok'; });   // sin sonido analizable: el video igual se puede usar
+  }, function(){ item.state = 'err'; item.bpm = null; });
 }
 function addFiles(files){
   var added = [], skipped = 0;
@@ -826,7 +968,7 @@ function addFiles(files){
   });
   renderList();
   if(added.length){ say(added.length+' canción(es) añadidas. Analizando el tempo de cada una…' + (skipped ? ' ('+skipped+' omitidas por no ser audio)' : '')); }
-  else if(skipped){ say('Esos archivos no parecen audio. Usa MP3, WAV, OGG, M4A o FLAC.', true); }
+  else if(skipped){ say('Esos archivos no parecen audio ni video. Usa MP3, WAV, OGG, M4A, FLAC, MP4 o WebM.', true); }
   runAnalysis();
   // si los decks están vacíos, se cargan las dos primeras
   var empty = [A,B].filter(function(d){ return !d.buffer; });
@@ -843,6 +985,7 @@ function renderList(){
     var li = document.createElement('li');
     var nm = document.createElement('div'); nm.className = 'tr-name';
     var b = document.createElement('b'); b.textContent = it.name; nm.appendChild(b);
+    if(isVideoFile(it.file)){ var vb = document.createElement('span'); vb.className = 'badge vid'; vb.textContent = 'VIDEO'; nm.appendChild(vb); }
     [A,B].forEach(function(d){
       if(d.item === it){ var s = document.createElement('span'); s.className = 'badge '+d.name.toLowerCase(); s.textContent = d.name; nm.appendChild(s); }
     });
@@ -903,6 +1046,7 @@ function applyCrossfader(){
 function setCrossfader(v){
   xfValue = Math.max(0, Math.min(1, v));
   xfEl.value = Math.round(xfValue*1000);
+  if(fsxEl) fsxEl.value = xfEl.value;
   applyCrossfader();
 }
 var mixTimer = null;
@@ -975,7 +1119,7 @@ function preloadAfterMix(inDeck, outDeck){
   if(outDeck.playing) return;
   var item = pickNextItem(inDeck, outDeck);
   if(!item) return;
-  if(outDeck.item === item && outDeck.buffer){ outDeck.offset = 0; outDeck.fresh = true; outDeck.ended = false; return; }
+  if(outDeck.item === item && outDeck.buffer){ outDeck.rewind(); outDeck.fresh = true; outDeck.ended = false; return; }
   outDeck.loadItem(item);
 }
 function checkContinuous(){
@@ -990,12 +1134,82 @@ function checkContinuous(){
   else if(prep.state === 'none' && cur.ended && !prep.said){ prep.said = true; say('Fin de la lista: no hay más canciones para seguir. Activa «Repetir la lista» o añade más.'); }
 }
 
+/* ---------- Pantalla de video ----------
+   Muestra los videos de los dos decks encima uno del otro: el crossfader los funde (si solo uno tiene video,
+   la imagen se apaga a negro mientras entra el otro). Se puede ampliar a toda la pantalla. */
+var scrEl = document.getElementById('screen'), scrBox = document.getElementById('scrbox'), scrCap = document.getElementById('scrcap');
+var fsBtn = document.getElementById('fsbtn'), fsPlay = document.getElementById('fsplay'), fsMix = document.getElementById('fsmix');
+var fsExit = document.getElementById('fsexit'), fsxEl = document.getElementById('fsx');
+var capTag = document.createElement('b'), capTxt = document.createElement('span');
+scrCap.appendChild(capTag); scrCap.appendChild(capTxt);
+var scrCache = {oa:-1, ob:-1, cap:'', play:''};
+function updateScreen(){
+  var any = A.isVideo || B.isVideo;
+  if(scrEl.hidden === any) scrEl.hidden = !any;
+  if(!any) return;
+  var v = xfValue, oa = 0, ob = 0;
+  if(A.isVideo && B.isVideo){ oa = 1; ob = v; }
+  else if(A.isVideo){ oa = 1 - v; }
+  else { ob = v; }
+  oa = Math.round(oa*100)/100; ob = Math.round(ob*100)/100;
+  if(oa !== scrCache.oa){ A.video.style.opacity = oa; scrCache.oa = oa; }
+  if(ob !== scrCache.ob){ B.video.style.opacity = ob; scrCache.ob = ob; }
+  var dom = v < 0.5 ? A : B, key = dom.name+'|'+dom.title;
+  if(key !== scrCache.cap){
+    scrCache.cap = key; capTag.textContent = 'DECK '+dom.name+'   ';
+    capTag.style.color = dom.name === 'A' ? 'var(--deckA)' : 'var(--deckB)'; capTxt.textContent = dom.title || '';
+  }
+  var pl = dom.playing ? '❚❚ Pausa' : '▶ Play';
+  if(pl !== scrCache.play){ scrCache.play = pl; fsPlay.textContent = pl; }
+  var xv = Math.round(v*1000);
+  if(+fsxEl.value !== xv && document.activeElement !== fsxEl) fsxEl.value = xv;
+}
+function isFs(){ return document.fullscreenElement === scrBox || document.webkitFullscreenElement === scrBox; }
+function fsFail(){ say('No se pudo abrir la pantalla completa aquí. Abre el archivo Mezclador-DJ.html o la aplicación instalada.', true); }
+function toggleFs(){
+  if(isFs()){
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if(ex){ var p0 = ex.call(document); if(p0 && p0.catch) p0.catch(function(){}); }
+    return;
+  }
+  var rq = scrBox.requestFullscreen || scrBox.webkitRequestFullscreen;
+  if(!rq){ fsFail(); return; }
+  try{ var p = rq.call(scrBox); if(p && p.catch) p.catch(fsFail); }catch(e){ fsFail(); }
+}
+var idleTimer = null;
+function wake(){
+  scrBox.classList.remove('idle'); clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){ if(isFs()) scrBox.classList.add('idle'); }, 3000);
+}
+function onFsChange(){
+  var on = isFs(); scrBox.classList.toggle('fs', on);
+  if(on) wake(); else { clearTimeout(idleTimer); scrBox.classList.remove('idle'); }
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+scrBox.addEventListener('mousemove', function(){ if(isFs()) wake(); });
+scrBox.addEventListener('pointerdown', function(){ if(isFs()) wake(); });
+scrBox.addEventListener('dblclick', toggleFs);
+document.getElementById('scrctl').addEventListener('dblclick', function(e){ e.stopPropagation(); });
+fsBtn.addEventListener('click', toggleFs);
+fsExit.addEventListener('click', toggleFs);
+fsPlay.addEventListener('click', function(){ var d = xfValue < 0.5 ? A : B; if(d.buffer) d.toggle(); });
+fsMix.addEventListener('click', function(){ autoMix(); });
+fsxEl.addEventListener('input', function(){ xfEl.value = fsxEl.value; xfEl.dispatchEvent(new Event('input')); });
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'f' && e.key !== 'F') return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  var tg = e.target && e.target.tagName; if(tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
+  if(!A.isVideo && !B.isVideo) return;
+  toggleFs();
+});
+
 /* ---------- Medidor de luces y bucle de animación ---------- */
 var meterEl = document.getElementById('meter'), LEDS = 18, leds = [], mbuf = null, lastT = performance.now(), peakHold = 0;
 for(var li = 0; li < LEDS; li++){ var led = document.createElement('i'); if(li >= LEDS-4) led.className = 'r'; else if(li >= LEDS-8) led.className = 'y'; meterEl.appendChild(led); leds.push(led); }
 function frame(now){
   var dt = Math.min(0.1, Math.max(0, (now - lastT)/1000)); lastT = now;
-  A.draw(); B.draw(); A.updateTime(); B.updateTime(); A.animate(dt); B.animate(dt); checkContinuous();
+  A.draw(); B.draw(); A.updateTime(); B.updateTime(); A.animate(dt); B.animate(dt); checkContinuous(); updateScreen();
   var pk = 0;
   if(analyser){
     if(!mbuf) mbuf = new Uint8Array(analyser.fftSize);
@@ -1012,7 +1226,7 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 
-window.__dj = {A:A, B:B, autoMix:autoMix, getX:function(){return xfValue;}, ctx:function(){return ctx;}, analyzeBpm:analyzeBpm, decodeFile:decodeFile, playlist:function(){return playlist;}};
+window.__dj = {peak:function(){return peakHold;}, A:A, B:B, autoMix:autoMix, getX:function(){return xfValue;}, ctx:function(){return ctx;}, analyzeBpm:analyzeBpm, decodeFile:decodeFile, playlist:function(){return playlist;}};
 })();
 </script>
 <script>
